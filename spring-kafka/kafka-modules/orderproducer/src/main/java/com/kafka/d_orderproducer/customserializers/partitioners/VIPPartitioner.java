@@ -1,4 +1,4 @@
-package com.kafka.b_orderproducer.customserializers.partitioners;
+package com.kafka.d_orderproducer.customserializers.partitioners;
 
 import java.util.List;
 import java.util.Map;
@@ -17,11 +17,13 @@ public class VIPPartitioner implements Partitioner {
 
 	@Override
 	public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
+		System.out.println("partition topic:" + topic + ", key:" + key + ", keyBytes:" + keyBytes + ", value:" + value
+				+ ", valueBytes:" + valueBytes);
 		List<PartitionInfo> partitions = cluster.availablePartitionsForTopic(topic);
-		if(((String)key).equals("Bharath")) {
+		if (((String) key).equals("Bharath")) {
 			return 5;
 		}
-		return (Math.abs(Utils.murmur2(keyBytes))%partitions.size()-1);
+		return (Math.abs(Utils.murmur2(keyBytes)) % partitions.size() - 1); // murmur2 - hashing algorithm
 	}
 
 	@Override

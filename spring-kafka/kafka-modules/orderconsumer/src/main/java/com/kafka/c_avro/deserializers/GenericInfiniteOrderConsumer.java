@@ -25,16 +25,22 @@ public class GenericInfiniteOrderConsumer {
 		KafkaConsumer<String, GenericRecord> consumer = new KafkaConsumer<>(props);
 		consumer.subscribe(Collections.singletonList("OrderAvroGRTopic"));
 
-		ConsumerRecords<String, GenericRecord> records = consumer.poll(Duration.ofSeconds(20));
-		for (ConsumerRecord<String, GenericRecord> record : records) {
-			String customerName = record.key();
-			GenericRecord order = record.value();
-			System.out.println("Customer Name: " + customerName);
-			System.out.println("Product: " + order.get("product"));
-			System.out.println("Quantity: " + order.get("quantity"));
-
+		try {	
+			while (true) {
+				ConsumerRecords<String, GenericRecord> records = consumer.poll(Duration.ofSeconds(20));
+				for (ConsumerRecord<String, GenericRecord> record : records) {
+					String customerName = record.key();
+					GenericRecord order = record.value();
+					System.out.println("Customer Name: " + customerName);
+					System.out.println("Product: " + order.get("product"));
+					System.out.println("Quantity: " + order.get("quantity"));
+		
+				}			
+			}
+		} finally {
+			consumer.close();
 		}
-		consumer.close();
+		
 	}
 
 }

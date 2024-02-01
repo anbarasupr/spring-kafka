@@ -1,10 +1,12 @@
-package com.bharath.kafka.orderproducer;
+package com.kafka.f_transactions;
 
 import java.util.Properties;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+
+import com.bharath.kafka.orderproducer.OrderCallback;
 
 public class TransactionalOrderProducer {
 
@@ -13,7 +15,7 @@ public class TransactionalOrderProducer {
 		props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 		props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
 		props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.IntegerSerializer");
-		props.setProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "order-producer-1");
+		props.setProperty(ProducerConfig.TRANSACTIONAL_ID_CONFIG, "order-producer-1"); // should be unique across various publisher instance
 		//props.setProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "1000");
 		
 		KafkaProducer<String, Integer> producer = new KafkaProducer<String, Integer>(props);
@@ -21,9 +23,10 @@ public class TransactionalOrderProducer {
 		ProducerRecord<String, Integer> record = new ProducerRecord<>("OrderTopic", "Mac Book Pro", 10);
 		ProducerRecord<String, Integer> record2 = new ProducerRecord<>("OrderTopic", "Dell Laptop", 20);
 
+		// A publisher cannot handle multiple transactions at the same time before commiting the current transactions
 		try {
 			producer.beginTransaction();
-			producer.send(record,new OrderCallback());
+			producer.send(record,new OrderCallback()); // Callback is not required  in transactions. If any failure, have to handle abort transactions
 			producer.send(record2);
 			producer.commitTransaction();
 			
