@@ -1,0 +1,513 @@
+Kafka:
+------------------------------------------------------------------------------
+	Distributed commit log as events happen in a micro service application, these micro service applications put these events onto a log apachec kafka which is a system,
+	managing these logs.
+	The famous and popular term for these logs is a topic.
+	
+	Kafka stores the events in a orderly fashion, and it also it write those to a disc not just one disk, it can replicate them across disks to ensure that the 
+	messages or events are not lost.
+	
+	Microservices applications exchange events through these topics or streams in real time
+	
+	And since the data and event can be produced as soon as they are produced, we can have realtime analytics.
+	
+	We can do recommendations and make decisions based on these analytics.
+	
+	These micro services applications will have their own processing logic, they dont just read the events from the topic and send them to another topic
+	
+	They will define their own computional logic. This is where kafka comes with the streaming api.
+	
+	The micro service application need to group data, aggregate them, filter them, join them etc.,
+	
+	kafka gives us the streaming api, which is simple to use and will be able to do all this right out of the box in our micro services is using the kafka streaming api.
+	
+	If there is data related to our  applications in external databases or other systems, we can use kafka connect, 
+	which can be easily configured open source kafka connectors to fetch and integrate with the other datasources or databases 
+	to fetch the data into kafka or to send the data from kafka to these external sources in declarative manner
+
+
+Advantages:
+------------------------------------------------------------------------------
+	Kafka supports multiple producers and consumers.
+	
+	Multiple producers can write to a single topic at the same time and multiple consumers can subscribe and consume the messages from the very same topic.
+	
+	Unlike traditional messaging systems, where once a message is consumed by a consumer from the topic, it will be gone.
+	
+	But in kafka it retains the message and another consumer application can still get the very same message.
+
+	Kafka also supports consumer groups and partitions that is within a application, a consumer application 
+	We can have parallel consumers running, which can a part of group called consumer group and the topic is divided into multiple partitions.
+	
+	THe messages from the producer will go across these partitions so that parallel processing is possible
+	
+	kafka ensures that within a consumer group, the message will be consumed only once. That is only one consumer within the consumer group will consume a 
+	particular message. THere will be no duplication
+	
+	So across applications, it allows the possibility of, these applications processing the very same message.
+	
+	But within a application, it allows parallelism by having a consumer group, and these consumers can consume messages from various partitions 
+	which are nothing but divisions within a topic.
+	
+	
+	
+	Secondly, it maintains a disk based persistence. That is even if a consumer is temporarily down becuase of restart or a crash, when it comes back up,
+	the kafka broker would have retain the message in a disk storage with a preconfigurable amount of time, the consumer will get the message whenever it is ready.
+	
+	
+	
+	Third, scalability as the load on the kafka broker increases, theser brokers can be easily scaled, mostly for dev environment, we can have for 10 or more brokers.
+	For production environment, we can have a  cluster of hundreds or thousands of  brokers.
+	
+	If one broker goes down, then another broker will take over, giving us availability as well.
+	
+	
+Usecase:
+------------------------------------------------------------------------------
+	Kafka can be used to exchange messages	across micro service applications.
+	This could be one micro service application sending notifications to a kafka topic to which other micro service application will subscribe and 
+	consume the notification to take the appropriate action.
+	
+	We can also implement a simple producer consumer pattern where one micro service application is producing lot of work and other micro service applications consume this work
+	and get it done like order shipping processing, etc.
+	
+	Activity tracking, this is how kafka has originated at linkedin, we can use it track it to track user activity or any activity, we can feedit to a topic which cane be 
+	read or are consumed by a machine learning algorithm which can generate the recommendations for that user, the producer application or website the user isbrowsing  can read
+	those recommendations and push them to the user whenever he does search. 
+	EX:Amazon, Netflix
+	
+	Metrics and log aggregation as applications produce metrics on a regular basis or even logs, all those can be aggregated and stored in a permanent storage for analysis.
+	Instead of waiting for along time as the applications are producing metrics and logs, they can be aggregated and put into systems like elastic search.
+	And  we can right away analyze that data to see if there are any unwanted activities or security threats.
+
+	Commit Log - use kafka as a commit log, as database changes happen, those changes can be streamed to a kafka topic andwe can use that data  to replicate the database if
+	required, or simply to analyze what is going on with the database and see if there are many threats or unwanted activity
+	
+	Stream processing - all the above mentioned use cases canbe treated as streams, kafka streams open up doors for numerous use cases where we can create data pipelines 
+	as the data flows through these pipelines and different stage will have transformation, computational logic, the data will be transformed at each step and big data tools
+	like Hadoop, Storm etc., can be a part of this data pipelines as well.
+	
+	
+Where:
+------------------------------------------------------------------------------
+Monitoring Trucks, Cars Shipments:
+	Kafka is the foundation for various big data platforms and even driven micro service applications. Car, trucks and shipments can be tracked in real time using kafka.
+
+Factories:
+	In factories, kafka canbe used to capture and analyze the IOT device data and ake decisions onthe fly.
+
+Financial Transactions:
+		Process banking and stock exchange transactions in the financial world
+
+Hospitals:
+	The patient information can be tracked and monitored and any changes in his condition can also be monitored.
+	
+
+
+	
+Kafka Architecture:
+------------------------------------------------------------------------------
+	Broker, Zookeeper, Producers, Consumers
+	
+Broker:	
+	THe kafka cluster is a collection of kafka brokers, also referred as Kafka servers or Kafka nodes.
+	
+	It is through the broker that the messages are exchanged between the producer and consumer applications.
+	THe broker not only decouples the producer and consumer, but it is also ensures that the messages are persisted and durable.
+	
+	The kafka broker is a java process and we can increase the number of brokers to provide scalability and durability of messages.
+	
+	One of the broker will be elected as a cluster leader or cluster controller. All other brokers will follow this leader.
+	
+	It is the responsibility of the cluster leader to manage the partitions, replicas and other adminstrative operations.
+	
+
+Zookeeper:
+	Zookeeper is responsible for electing a cluster controller or leader, all the broker nodes will register themselves with the zookeeper component when they come up
+	and the zookeeper will pick only one of brokers as the cluster leader.
+	
+	
+	If that broker goes down, it will pick up another broker as the cluster leader.
+	
+	It also maintains the state of the cluster like the metadata of the leader and followers.
+	
+	The states, quotas, the access control list eveerything will be maintained by zookeeper
+	
+	zookeeper is apache opensopurce project of its own, when we install kafka, it will come bundled with zookeeper
+	
+	kafka also working on a component of its own that is going to replace zookeeper in the future.
+	
+	
+Producer:
+	Producer is an application that produces data that communicate with the cluster using TCP protocol and they connect with the broadcast directly and 
+	start sending messages.
+	
+	A producer can send messages to multiple topics and a topic can receive messages from multiple producers.
+	
+
+Consumer:
+	It is an application that consumes from one or more topics, consumes records or datafrom one or more topics and process it.
+	
+	Consumers co-ordinate among themselves as a group to balance the load and also track each others.
+	
+	
+
+Record:
+------------------------------------------------------------------------------	
+	There are several attributes to a record, starting with Topic, Partition, Offset, Timestamp, Key, Headers, Value.
+
+Topic:
+	The topic is the topic to which this record should be returned to. 
+
+Partition:	
+	The partition is a zero based index to which the record should be written.
+	A record is always associated with only one partition, and the partition number can be set by the producer application.
+	And if it is not set, it will be calculated based on the key that is provided in the record.
+	A hashvalue will be calculated by using the key value and the result will be used as the partition number  to which that record should go to.
+	
+Offset:
+	It is a 64 bit signed integer for locating the record within a partition.
+	
+Timestamp:
+	It is set by the producer application and if it is not set, then the producer API internally assigns the current time as the timestamp.
+	
+Key:
+	Although it is called a key, it is an optional non unique value, it is array of bytes.
+	A key value you present will be used to calculate the partition number. A hash algorithm will be used along with this.
+	
+	The value of the key and the partition number will be calculated to which the record should go to.
+	
+	If the key value is not set becuase it is optional, then the kafka will decide the  partition number in a round fashion.
+	That is, it will assign the record to a particular partition based on the round robin fashion.
+	
+	This is not a primary key and we can even set the same key for multiple records on the producer, and all of those records will end up in the same partition.
+	So we can control that using the value of the key.
+	
+	It is not  unique. If you want to uniquely identify a record, then you can use the partition number and the offset as using these two, you can 
+	uniquely identify a record.
+	
+Headers:
+	It is optional key value pairs, just like the http headers to pass in metadata.
+	
+Value:
+	This is where the payload of message lies. It is an arrya of bytes.
+	It is the one that  contains our business data, although the value is optional.
+	Without it, the Record does not make any sense.
+	
+	So all the attributes are like metadata for this data we are exchanging using the value  attribute.
+	
+https://kafka.apache.org/23/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html
+
+	
+	
+	
+Topics Partitions and Offsets:
+------------------------------------------------------------------------------
+					Topic
+	Partition 0		0|1|2|3|4|5|6|7|8|9|10
+	Partition 1		0|1|2|3|4|5|6|7|8|9|10|11
+	Partition 2		0|1|2|3|4|5|6|7|8|9|10|11
+	Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12
+
+
+	Each topic can be divided into one or more partitions.
+	If kafka is a distributed messaging or commit log, then a partition is a single log of messages or Records.
+	
+	Messages are appended to the end of a partition as they come in.
+	
+	Kafka assigns  each partition a unique number and also each message or a record that is stored within a partition gets the offset value.
+	
+	This offset values like array index. It starts with zero for every partition.
+	
+	And as the messages are stored, it will be incremented the partition number and the offset value uniquely identify a record and also kafka stores the partition number
+	and the offset value inside the record or message.
+	
+	Since messages can go across partitions, the messaging order across partitions is not guaranteed whereas the messaging order within a partition is maintained, the
+	producer application can specify which partition the message should go into using the partition number.
+	
+	When a producer creates a record using the partition number attribute, it can tell which exact partition it should go into. Kafka will take the partition number and 
+	put the message into that partition. If not, it can give you a key. kafka willuse this key to calculate a hash and whatever the hash is that will become the partition
+	number into which that record will go into.
+	Even if the key is not provided by the producer, then kafka will put the message into one of the partitions using round robin algorithm.
+	
+	Partitions give kafka the power of scalability and availability. That is these partitions can be scaled across brokers as the load increases, as there are too many
+	messages coming in.
+	
+	
+	Broker 0				Broker 1				Broker 2
+	-------------------------------------------------------------
+	Partition 0				Partition 2				Partition 3
+	Partition 1
+	
+	instead of puting all the partitions in One Broker, we can scale them across Brokers here.
+	Here there are four partitions on three brokers.
+	
+	This will increase the performance and the application can be easily scaled.
+	
+	
+Replication or duplication:
+	Partitions also support replication or duplication, which give high availability
+	
+	
+	Broker 0				Broker 1				Broker 2
+	-------------------------------------------------------------
+	Partition 0				Partition 2				Partition 3
+	Partition 1				Partition 0				Partition 2
+	Partition 3				Partition 1			
+
+	Here the partition zero and one are present in Broker zero as well as Broker one.
+	The partition two is present in broker one and also broker two.
+	And partition three is duplicated both in broker two and broker zero.
+	
+	This gives high availability. Even one broker goes down, another broker can take over.
+	That does not mean that all the brokers are processing the messages from each of these partitions.
+	It uses the concept of leader and follower here. Each partition will have a leader and follower here.
+	
+	Broker 0				Broker 1				Broker 2
+	---------------------------------------------------------------
+	Partition 0	(L)			Partition 2	(L)			Partition 3	(L)
+	Partition 1	(L)			Partition 0	(F)			Partition 2 (F)
+	Partition 3	(F)			Partition 1	(F)	
+	
+	
+	if any of the leader goes down, the new leader will get elected from one of the followers.
+	
+	We have a replica and if something goes wrong, the other broker can take over that network.
+	
+Replication factor:	
+	Duplication are the replicas we want using the replication factor, if the replciation factor is one, then there will be no duplication.
+	If the replication factor is two, the partition will be duplicated, one copy will be created and they will be stored across brokers.
+	If the replication factor is three, two copies will be created, totally 3 partitions will be there across brokers including the original
+	
+	
+Consumer Groups:	
+------------------------------------------------------------------------------
+	Partitions bring concurrency to Kafka, that is by having messages that belong to the topic spread across partitions, we can create a consumer group.
+	
+	A consumer group is a set of consumers working together to consume a topic. A consumer group ensures that each partition is comsumed by only one consumer.
+
+
+					Topic									Consumer group
+					
+	Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ Consumer 0
+	
+	Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ Consumer 1
+	
+	Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ Consumer 2
+	
+	Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ Consumer 2
+	
+	
+	The first two consumers are consuming the first two partitions respectively, and the last consumer two is consuming the last two partitions.
+	
+	Assigning a consumer to a partition is called the ownership of the partition by the consumer.
+	
+	Consumers can easily be horizontally scalled. That is, if the load on a consumer is increasing, we scale up the consumers and the new consumer will take over a partition.
+	
+	Also if one consumers feels the remaining consumers can co-ordinate among themselves and take over the partitions that the failed consumer was working with.
+	
+	
+					Topic									Consumer group
+					
+	Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ Consumer 0
+	
+	Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ Consumer 1
+	
+	Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ Consumer 2
+	
+	Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ Consumer 2
+															
+															Consumer 3
+	
+	
+------------------------------------------------------------------------------
+
+
+	
+	
+Batches:
+	Producers will not send one message at a time to kafka broker. Instead they batch them based on topic and partition.
+	The batch is a collection of messages that should be returned to the same topic and partition.
+	This will reduce the network roundtrips which otherwise the each messages are required send to kafka broker individually.
+	
+	The larger the batch size, the more messages are processed in a given time frame.
+	
+	Batches are also compressed providing more efficient data transfer and storage. ofcourse it takes some time to do the compression.
+	we can configure the batch size.
+	
+								Topic1,Partition0
+								--------------------
+								Batch0, Batch1, Batch2
+kafka producer	->								
+								Topic2,Partition1
+								--------------------
+								Batch0, Batch1, Batch2
+	
+
+
+
+Admin API:
+												->	Topics
+		KafkaDrop		->		Kafka Broker	->	Brokers
+												-> Other Objects
+												
+Producer API:
+	Producer api sends stream of messages to broker and unlike traditional messaging product, it does serialization, partition assignment
+	
+Consumer API:
+	Consumer api consumes the messages from topic and it does Deserialization and Rebalancing
+	
+
+Streams API:
+							kafka Cluster				Streams
+Producer		->			Input Topic			->		Stream producers	-> Transform	-> Aggregate	-> Join
+																												↓
+																												
+							output Topic																<-	Consumers
+
+Connect API;
+	Import and export data from external datasources
+
+	
+	
+	
+	
+	
+↑ ↓ → ←	
+
+		
+	
+Set up Commands:
+---------------
+zookeeper-server-start <KAFKA_DIR>\zookeeper.properties
+
+kafka-server-start <KAFKA_DIR>\server.properties
+	
+	
+
+zookeeper-server-start F:\git\softwares\kafka\config\zookeeper.properties
+kafka-server-start F:\git\softwares\kafka\config\server.properties
+
+kafka-server-stop
+
+
+Basic commands:
+---------------	
+	
+kafka-topics --list --bootstrap-server localhost:9092
+
+kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic first-topic
+
+kafka-topics --describe --bootstrap-server localhost:9092 --topic first-topic
+
+kafka-console-consumer --bootstrap-server localhost:9092 --topic first-topic
+
+kafka-console-producer --broker-list localhost:9092 --topic first-topic
+
+kafka-topics --delete --bootstrap-server localhost:9092 --topic first-topic                           
+
+Note:
+
+For delete add the following in kafka server.properties
+
+delete.topic.enable=true
+
+
+confluent:
+--------
+confluent local service start
+confluent local service stop
+	
+	
+	
+Docker:
+--------
+docker run hello-world	
+docker ps -a
+	
+	
+	
+	
+	
+Schema Compatability:
+------------------------
+
+As schema changes over a period of time, the consumer application might not always ready to use the latest schema and they dont aware of the changes done by the publishers,
+where the schema Compatability in.
+
+The producer takes the ownership of the schemas and when they change the schemas, they should ensure all the downstreams consumers are ok with the new schemas.
+
+This is pretty difficult if there are large consumers.
+
+That is where the schema registry allows you to configure the schema compatability rules at schema level and if the producer break the rules, they will immediately get exceptions.
+
+Make sure the schemas are always backward compatability to do impact the consumers.
+
+
+Poll:
+-----
+ConsumerRecords<String, Integer> orders = consumer.poll(Duration.ofSeconds(20));
+
+consumer.poll - if there are rcords found during the duration, it will return it and close the consumer, if no records found, it will wait for the duration and then get closed.
+
+
+Consumers run for infinite time and to runit infinite time, use some while loop with some condition
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+		
+	
+		
+	
+	
+
