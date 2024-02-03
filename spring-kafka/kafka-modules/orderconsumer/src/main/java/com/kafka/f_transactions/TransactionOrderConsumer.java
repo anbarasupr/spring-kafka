@@ -1,4 +1,4 @@
-package com.bharath.kafka.orderconsumer;
+package com.kafka.f_transactions;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -11,7 +11,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 
-public class OrderConsumer {
+public class TransactionOrderConsumer {
 
 	public static void main(String[] args) {
 		Properties props = new Properties();
@@ -31,7 +31,7 @@ public class OrderConsumer {
 		props.setProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, RoundRobinAssignor.class.getName());
 		
 		KafkaConsumer<String, Integer> consumer = new KafkaConsumer<>(props);
-		consumer.subscribe(Collections.singletonList("OrderTopic"));
+		consumer.subscribe(Collections.singletonList("OrderTransactionTopic"));
 
 		ConsumerRecords<String, Integer> orders = consumer.poll(Duration.ofSeconds(20));
 		for (ConsumerRecord<String, Integer> order : orders) {

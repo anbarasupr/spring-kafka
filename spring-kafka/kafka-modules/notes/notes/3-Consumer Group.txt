@@ -1,0 +1,255 @@
+Consumer Group:
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+								-------------------
+								|				  |			
+								|				  |		<-		Billing Consumer App			-> DB
+								|				  |			
+Patient Checkout APP		->	|	Kafka Broker  |			
+								|				  |			
+								|				  |		<-		House Keeping Consumer App	-> DB
+								|				  |			
+								-------------------
+								
+		The patient check application publishes a record to a kafka broker every time a patient checks out and the billing & house keeping application will 
+		read those records, process them during their own business logic.
+		
+		If the patient check out application keeps publishing lot of records, it will increase the load on our consumer app, if they cannot handle the load and might be crash.
+		
+		THat is where consumer groups come in.
+		
+		Consunmer groups are a group of consumers that can read from the same topic, but different partitions from the topic.
+		
+		The powere of kafka comes from its scaling abilities.
+		A topic is broken into multiple partitions andthen we can have a consumer group with one or more consumers that can consume the partitions of the topic.
+		
+		
+		if a consumer group have only one consumer and we have four partitions, then the single consumer is responsible for consuming the records from all partitions.
+		But we can easily scale them and increase the  consumers, when load increases.
+		
+		
+						Topic										Consumer group
+																|
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |
+																|
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 0
+																|
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |
+																|
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |		
+		
+		
+		
+		Now we have two consumers, so these 2 consumers will split the partitions among themselves.
+		The first consumer consume the first 2 partitions and second one consumer next two partitions.
+		
+					Topic											Consumer group
+																
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |
+																|	Consumer 0
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	
+																
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |
+																|	Consumer 1
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |		
+		
+		
+				Now we have two consumers, so these 2 consumers will split the partitions among themselves.
+		The first consumer consume the first 2 partitions and second one consumer next two partitions.
+		
+					Topic											Consumer group
+																
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |
+																|	Consumer 0
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	
+																
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |
+																|	Consumer 1
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |	
+		
+		
+		
+		If add one more consumer, then consumer 0 consumer partition0, consumer1 consume partition1 and consumer2 consume last 2 partitions.
+			
+					Topic											Consumer group
+																
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |	Consumer 0
+																	
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 1
+																
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |
+																|	Consumer 2
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |	
+		
+		
+		Similiarly we can four consumers and each consumer one partition.
+		
+							Topic									Consumer group
+																
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |	Consumer 0
+																	
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 1
+																
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 2
+																	
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |	Consumer 3
+		
+		
+		
+		if we more consumes than the number of partitions, then those consumers might hang idle and do nothing.
+		So it isour responsibility to ensure that we create enough partitions to keep our consumers in the group busy.
+		
+								Topic								Consumer group
+																
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |	Consumer 0
+																	
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 1
+																
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 2
+																	
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |	Consumer 3
+																|	Consumer 4
+																|	Consumer 5
+																
+																
+		Consumer groups not only allow us to scale and take care of the load that is coming in from the producers.
+		
+		But using consumer groups, multiple applications can consume from the same topic and have their own copies of data.
+		
+		Here we have two consumer groups, one for the billing application and one for the housekeeping application.
+		They can consume all the data from the very same topic.
+		
+		
+							Topic									Billing Consumer group				House keeping Consumer group
+																                                    			
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |	Consumer 0                      	<------ |	Consumer 0
+																	                                				
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 1                      	<------ |	Consumer 1
+																                                    			
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 2                      	<------ |	Consumer 2
+																	                                				
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |	Consumer 3                      	<------ |	Consumer 3
+		
+		
+Consumer Group Rebalancing:
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	lets say a topic has four partitions and a conusmer group has three consumers consuming from these four partitions.
+	If a new consumer is added to this consumer group, the new consumer will start reading from the partitions that were previously consumed by the other consumers in the group.
+	
+	Secondly, if one of the consumers goes down, whether it has gracefully shutdown or whether it has crashed, the partitions it has left out will have to be taken care of
+	by the other consumers in the consumer group.
+	
+	Moving partition ownership from one consumer to another consumer in the group is called consumer group rebalancing.
+	
+	
+	Whenver a consumer is added to the consumer group or a consumer leaves the consumer group, 
+	moving partition ownership from one consumer to another consumer is called rebalancing.
+	
+	Rebalancing is the key for high availability and scalability for kafka.
+	
+	At the same time, whenever rebalance happens, all the consumers in the consumer group will go silent. The consumer group will not do anything when the rebalance is happening.
+	
+	
+How Rebalancing and Consumer Group works:
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+	When a new consumer group is created, kafka allocates one of the brokers as the consumer group coordinator.
+	When a new consumer joins the consumer group, it does so by sending a joint request to the group coordinator.
+	The group coordinator will send all the partition details to this very first consumer and makes it a consumer group leader.
+	
+	
+												    
+    	Broker 0	  							  							 	Consumer Group  					 
+    |------------------						      		Joint Request		 |------------------|	
+    |	Partition 0	  |							  		<------				 |	Consumer 0	  	| 
+    |				  |						 	  Send Partition details	 |	(Leader)	  	|
+    |	Partition 1	  |						      & elects a Consumer leader |				  	|
+    |				  |	->	Group CoOrdinator  			------>				 |				  	|
+    |	Partition 2	  |						      							 |				  	|
+    |				  |						      							 |				  	|
+    |	Partition 3	  |							  							 |				  	|	  
+	|-----------------|                           							 |------------------| 
+			                                      
+    	
+	When another consumer joins the group by sending joint request, the group coordinator will trigger a reblance. While doing that, it will handover the current partition details
+	and also the consumer details to the group leader who does the rebalancing.	
+
+		
+	    	Broker 0	  							  							 	Consumer Group  					 
+    |------------------						      		Joint Request		 |------------------|	
+    |	Partition 0	  |							  		<------				 |	Consumer 0	  	| 
+    |				  |						 	  Send Partition details	 |	(Leader)	  	|
+    |				  |							& elects a Consumer leader	 |	
+	|	Partition 1	  |						       		------>				 |
+    |				  |	->	Group CoOrdinator  			Rebalance Request	 |				  	|
+    |				  |									------>				 |
+	|	Partition 2	  |						      							 |		  			|
+    |				  |						      							 |				  	|
+    |				  |									Joint Group Request	 |					|
+	|	Partition 3	  |							  		<------				 |	Consumer 1	  	|	  
+	|-----------------|                           							 |------------------| 
+	
+	
+	It is the group leader which is another consumer who does the rebalancing. The leader does the rebalancing and reassign  all the partitions to the list of consumers
+	that are available in the group and handsover the list to the group coordinator.
+	
+			
+	    	Broker 0	  							  							 	Consumer Group  					 
+    |------------------						      		Joint Request		 |------------------|	
+    |	Partition 0	  |							  		<--1----			 |	Consumer 0	  	| 
+    |				  |						 	  Send Partition details	 |	(Leader)	  	|
+    |				  |							& elects a Consumer leader	 |					|
+	|	Partition 1	  |						       		---2--->			 |					|
+    |				  |	->	Group CoOrdinator  			Rebalance Request	 |				  	|
+    |				  |									---4--->			 |					|
+	|	Partition 2	  |				 Hands over partition allocation details |		  			|
+    |				  |						      		<------				 |				  	|
+    |				  |									Joint Group Request	 |					|
+	|	Partition 3	  |							  		<--3----			 |	Consumer 1	  	|
+	|				  |														 |					|
+	|	  			  |														 |					|
+	|-----------------|                           							 |------------------| 
+	
+	
+	The group coordinator will then send the individual partition allocation details to the other consumers.
+	only the group coordinator and the leader will have the entire list of consumers and the partition allocation information
+	and the other consumers in the group will get only their partition allocation information.
+	
+				
+	    	Broker 0	  							  							 	Consumer Group  					 
+    |------------------						      		Joint Request		 |------------------|	
+    |	Partition 0	  |							  		<--1----			 |	Consumer 0	  	| 
+    |				  |						 	  Send Partition details	 |	(Leader)	  	|
+    |				  |							& elects a Consumer leader	 |					|
+	|	Partition 1	  |						       		---2--->			 |					|
+    |				  |	->	Group CoOrdinator  			Rebalance Request	 |				  	|
+    |				  |									---4--->			 |					|
+	|	Partition 2	  |				 Hands over partition allocation details |		  			|
+    |				  |						      		<------				 |				  	|
+    |				  |									Joint Group Request	 |					|
+	|	Partition 3	  |							  		<--3----			 |	Consumer 1	  	|
+	|				  |														 |					|
+	|	  			  |														 |					|
+	|-----------------|                           							 |------------------| 
+	
+	
+	
+	If another consumer joins the group, the same process repeats again.
+	It sends a joint request to the group coordinator.
+	The group coordinator triggers the rebalance and the leader does the rebalancing.
+	Hands over the partition allocation details to the group coordinator and hand allocation to all the consumers.
+	
+	
+	Even when a consumer leaves the group either gracefully or crashed, the same rebalancing will happens.
+	
+	How does the group coordinator know about the consumer health? The consumers are responsible for sending a heartbeat.
+	As long as they are sending a heartbeat, the group coordinator considers them to be alive. 
+	If they wont for a certain amount of time which we can configure for testing, the group coordinator considers them as dead and it will trigger rebalance.
+	
+	Also consumers can also gracefully leave the group by sending in a leave request. 
+	When they close off, they will send a leave request to the group coordinator and it triggers a rebalance.
+	
+	That is how rebalancing works.
+	
+	Remember when the rebalance happens, the consumer group does nothing because the group leader is reassigning all the partitions to all the avaialable and newly available consumers.
+	The consumer will sit idle, so we needto ensure that we minimise rebalancing process, if possible we can avoid.
+	

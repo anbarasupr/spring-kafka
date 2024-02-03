@@ -1,0 +1,303 @@
+Offset Commits:
+----------------------------------------------------------------------------------------------------------------------------
+	We have a topic with four partitions and a consumer group with four consumers consuming the  partitions of the offsets within the partitions by invoking the poll method.
+	
+	kafka, unlike traditional messaging systems, it wont keep track of  which offset a consumer has reached or how many offsets the consumer has already processed.
+	
+	It is ok as long as all the consumers are healthy and we are sure they are going to complete processing all the partitions that are allocated to them.
+	
+								Topic									Consumer group
+						----------------------										
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |	Consumer 0 processed offset 7
+						----------------------											
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 1 processed offset 9
+						----------------------------										
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 2 processed offset 4
+						----------------------------							 				
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |	Consumer 3 processed offset 6
+		
+		
+	But if  a new consumer is added to the consumer group or if a consumer crashes, rebalacing will be triggered, at which point all the partitions will be 
+	reassigned across the consumers and the new consumers that have to take care of the partitions that are reallocated or reassigned to them.
+	They wont know where to start at which offset they should start within a given position because the previous consumer would have already processed certain
+	offset within the partition.
+	
+							Topic									Consumer group
+						----------------------										
+		Partition 0		0|1|2|3|4|5|6|7|8|9|10			<------ |	Consumer 0 processed offset 7
+						----------------------											
+		Partition 1		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	Consumer 1 processed offset 9
+						----------------------------										
+		Partition 2		0|1|2|3|4|5|6|7|8|9|10|11		<------ |	
+						----------------------------			|	Consumer 2 processed offset 4 for partition2 and dont know from which offset to process in partition 3 ?
+		Partition 3		0|1|2|3|4|5|6|7|8|9|10|11|12	<------ |	 
+	
+	This is where offset commits in.
+	
+	
+	Although kafka does not internally keep track of the offsets that are already consumed by previous consumer, it allows the consumer api to do it.
+	
+	The consumer can commit the offsets they have already processed to a special topic called _consumer_offsets. This is the inbuilt topic that comes with kafka.
+	When a consumer has processed the messages say it is set up to offset 6, it will commit that information to this topic.
+	
+	
+	
+	----------------------	
+    0|1|2|3|4|5|6|7|8|9|10		<-	Consumer 0		->	commit	->	_consumer_offsets topic
+    ----------------------	
+			    ↑
+				
+	At this point, if a rebalacing happens, the new consumer that is assigned to this position.
+	It will look at this special topic for the information about which offset the previous consumer has processed and it will start consuming from the next offset.
+	
+	----------------------	
+    0|1|2|3|4|5|6|7|8|9|10		<-	Consumer 1		->	lookup offset details	->	_consumer_offsets topic
+    ----------------------	
+			      ↑
+				  
+	But we have two issues that need to be aware of.
+	
+1. Duplicate processing:
+------------------------
+
+	lets ay we have a consumer that has processed a partition upto six record and it has committed this information tooffset topic.
+	It wont stop. It will invoke the pole method and it will process the next set of records (from 7 to 9) and it has reached offset 9.
+	So it has processed all the way to offset 9, but it has not committed at this point.
+
+	----------------------	
+	0|1|2|3|4|5|6|7|8|9|10		<-	Consumer 0 (Processed 6 o 9 but not commited)		->	commit	->	_consumer_offsets (commited until 6 offset)
+	----------------------	
+				↑
+			
+	If rebalacing is to triggered, the new consumer that comes in will know that the previous consumer has commited up to offset six and 
+	it will start processing from offset 7 all the way to the end of the partition resulting in duplicate processing.
+	
+	----------------------	
+	0|1|2|3|4|5|6|7|8|9|10		<-	Consumer 1 (Start Processing from seven to end)		->	commit	->	_consumer_offsets
+	----------------------	
+				  ↑
+				
+				
+				
+2. Missed processing:
+------------------------
+	This could happen if the consumer has overcommitted, it is overconfident. It has received an offset from the pole method and it has commited all the way.
+	Lets say, to offset 10, but it has only processed upto offset 2.
+	
+	----------------------------
+	0|1|2|3|4|5|6|7|8|9|10|11|12	<-	Consumer 0
+	----------------------------	
+		↑		        ↑
+						Committed offset
+						
+						
+	If a rebalacing happens at this point, the new consumer that comes in think the previous consumer has processed all the way to record 10 
+	and it will only process starting offset 11.
+	
+							↓
+	----------------------------
+	0|1|2|3|4|5|6|7|8|9|10|11|12	<-	Consumer 1 starts process from offset 11 
+	----------------------------	
+		↑		        ↑
+						Committed offset
+		----------------
+	Commited but not processed
+	
+	
+	This is the problem of overcommitting and we will miss some records here commited but not processed.
+	These records will never be processed.
+	
+	
+
+
+
+Auto Commit: default one (enable.auto.commit = true by default)
+----------------------------------------------------------------------------------------------------------------------------
+
+	try {	
+		while (true) {
+			ConsumerRecords<String, Integer> records = consumer.poll(Duration.ofSeconds(20)); //fetch the offset of records for every poll
+			for (ConsumerRecord<String, Integer> record : records) {
+				// Process the records here
+				System.out.println("Product Name " + record.key());
+				System.out.println("Quantiy " + record.value());
+			}			
+		}
+	} finally {
+		consumer.close();
+	}
+		
+	The default time interval within which the auto commit happens is every 5 seconds.
+	That does not mean that automatically the offset or the records will be commited every 5 seconds.
+	The poll method is the one which drives it, when the poll method is invoked for the very first time, it will fetch a offset and it will also start at timer for the auto commit.
+	The records will be processed the next time the poll is invoked.
+	The poll will check if the default 5 seconds have elapsed.
+	Only  if the 5 seconds have elapsed, it will commit the previous offset.
+	If the 5 seconds have not elapsed, let say at 3 or 4 second point, it will fetch the next offset of records and the consumer wil process them.
+	And the next time the poll is invoked, if the timer has gone beyond 5 seconds mark, lets say it has gone to 6, 7 or 8 seconds, it will commit both the previous offsets
+	and the timer is reset to zero.
+	Again the timer will starts from zero and it will go all the way to 5 seconds mark.
+	
+	Although the default value is 5 seconds, it is the poll method which drives it for us.
+	
+	To change the default 5 seconds value,
+	set producer config to auto.commit.interval.ms = 500
+	
+	just like the poll method, the consumer.close method also does a commit, to ensure whatever records we have, they are all processed before the close is being invoked.
+	
+	
+	
+	
+	The problem with the auto commit comes with rebalacing.
+	
+	Lets say we have a offset of thousand records and we are using default auto commit time of five seconds.
+	
+	And lets say two seconds have elapsed and we have reached the 400 record.
+	At this point, if a rebalacing happens, whenever a rebalacing happends, all the consumers will start consuming from the latest offset and these 1 to 400 records,
+	since they are not commited, they will be consumed again and they will be processed again.
+	
+	Auto Commit: 5 seconds default commit time
+	
+	----------------------------
+	 1| ... 400|...	...	..	1000			Rebalance happens at 2 seconds	
+	----------------------------	
+	  1 - 400
+	
+	
+	400 processed but not committed, after rebalacing, they will be consumed and processed again.
+	
+	
+	If we want to reduce that, we can reduce the value of the auto commit, so we can confure to lower value like 500 ms or 2 second but the problem is not 
+	completly gone.
+	
+	
+	
+	
+
+Manual Commit:
+----------------------------------------------------------------------------------------------------------------------------
+	Sync
+	Async
+	Specific Offset
+	
+	
+1. Sync Commit: consumer.commitSync()
+------------------------------------------
+	When we use the auto commit, the poll method willdo the commit for the offsets based on a default time window.
+	
+	To gain more control on when the offsets are committed, disable the auto commit by belwo config
+		auto.commit.offset = false
+		
+	once it is disabled, use the consumer.commit methods to commit the offsets.
+	
+	Typically the poll method returns as an offset of records.
+	We process them, once the offsets are processed and commit them using consumer.commitSync();
+	
+	commitSync will commit the entire currect offsets. So we have to ensure that all the records are processed completely before invoking the commitSync method.
+	
+	commitSync method is intelligent enough to do retries when it triesto commit. 
+	If there are any exceptions, it will retry to commit again unless it is unrecoverable exception.
+	
+	
+	
+	We still have the rebalacing problem here.
+	Lets say we have 1000 records that are returned in the offset when we invoke the poll method and 400 or 500 records are processed,
+	At that point, if rebalacing happens, whichever consumer picks this offset after the rebalacing, it will still reprocess those records starting from 
+	beginning of the offset all the way to whatever were processed earlier and still have the duplication problem.
+	
+	Now we have more control on committing the offset.
+	Here we are ensuring that we commit offset right away as soon as it is processed and not after a certain interval of time frame. Due to that, we can minimise the 
+	duplication problem but not entirely gone.
+	
+		
+	try {	
+		while (true) {
+			ConsumerRecords<String, Integer> records = consumer.poll(Duration.ofSeconds(20)); //fetch the offset of records for every poll
+			for (ConsumerRecord<String, Integer> record : records) {
+				// Process the records here
+				System.out.println("Product Name " + record.key());
+				System.out.println("Quantiy " + record.value());
+			}
+			// After all records are processed, commit the entire offsets
+			consumer.commitSync();
+		}
+	} finally {
+		consumer.close();
+	}
+
+2. Async Commit: consumer.commitAsync()
+------------------------------------------
+
+The commitSync method blocks the consumer application until the broker responds back to that commit request which is degrading the application performance.
+
+The commitAsync will not block the application. The current offset will be sent for a commit to the broker and the next pole will happen.
+The next offset will be retrieved and that willbe processed while the commit is still in progress for the previous offset asynchronously.
+
+But there are some challenges here.
+	This commitAsync will not retry if a commit fails for some reason.
+	The commitSync used to retry but the commitAsync wont retry and there is a reason for it.
+	
+	Reason for no retry in commitAsync:
+		lets say when the pole is invoked for the very first time, we have recieved a offset with records from 1 to 1000.
+		And those records are successfully processed as per our business needs, and  the commitAsync method is invoked.
+		Since it is   asynchronous, this 1-1000 offset batch will be sent for a commit and pole will be invoked.
+		
+		It wont block, so the pole will be invoked which will give the next set of records the next offset which will be also processed successfully.
+		But if the previous commit has failed for some reason, lets say that broker was temporarily down or for some reason the previous commit was failed.
+		In the mean time, the next offset was successfully processed, lets say from 1001 to 2000 and it was committed using the commitAsync successfully now the broker is up.
+		
+		It has successfully committed these 001 to 2000 offset records.
+		
+		If  the commitAsync retries to commit this batch or this failed offset which 1 to 1000 and if it succeeds.
+		The order will now be jumbled depending on the when commitAsync retries, this order can be jumbled like 1001 - 2000, 1 - 1000.
+		Commit order happens in reversed fetch order.
+		
+		And if a rebalacing happens at this point, whichever comsumer comes back up, it will look at this last entry and it will reprocess all the entries again after that.
+		
+		So it will end up in duplicate processing.
+		That is the reason retires are not supported in commitAsync.
+		
+		
+		
+	commitAsync also gives us a callback that we can invoke or listen, so that callback gets invoked whenevet the commit finishes and we can take the appropriate action
+	in the onComplete method of callback. Mostly we do log the failed commits.
+	
+	If we want to do retry here and we can do it but the problem said above will exist.
+	
+	
+	
+	try {	
+		while (true) {
+			ConsumerRecords<String, Integer> records = consumer.poll(Duration.ofSeconds(20)); //fetch the offset of records for every poll
+			for (ConsumerRecord<String, Integer> record : records) {
+				// Process the records here
+				System.out.println("Product Name " + record.key());
+				System.out.println("Quantiy " + record.value());
+			}
+			// After all records are processed, commit the entire offsets asynchronously and immediately the next poll happens
+			1001 - 2000
+			1 - 1000
+			consumer.commitAsync();
+			//consumer.commitAsync(new offsetCallback(){}); //	callback suuport
+		}
+	} finally {
+		consumer.close();
+	}
+	
+
+	
+
+3. Specific Offset
+------------------------------------------	
+
+The commitSync and  commitAsync methods by default will commit the entire offset that was returned by the previous poll method.
+
+one disadvantage there is we have to wait for all the records to  be processed and then we invoke the commit. 
+
+If a rebalacing happens inbetween processing or commiting of those records, then the next consumer which takes up the partition will start	comsuming the messages again
+from the beginning of the previous offset because we have not commited at all.
+
+
+By doing custom commits, by taking things into our own hands, we can avoid that by doing more frequent commits.
+Both the commitSync and commitAsync methods allow us  do that. There are overloaded  versions.
+
