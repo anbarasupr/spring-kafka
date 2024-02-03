@@ -5,17 +5,130 @@ ConsumerConfig.FETCH_MIN_BYTES_CONFIG:
 	
 	if it is configured 1024, it has to have those many number of bytes before it can send the data to the consumer. 
 	By default, it is 1 MB.
-	The higher the number, the better it is      aus
+	The higher the number, the better it is because the consumer and the broker dont have to go back and forth to exchange the data.
 	
+ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG:
+	Default is 500 ms.
+	
+	If confiured it to 200 ms, kafka broker will wait for two hundred ms before it sends the data.
+	
+	The way it works is, if  have both of these configured, kafka broker will check if this memory is reached already, if it has enough loads, it will automatically sends the data.
+	Whichever comes first, the 200 ms come first even before this memory is filled in with these messages, then it will send all the messages to the consumer.
+	
+	
+HEARTBEAT_INTERVAL_MS_CONFIG: 1000 MS
+	For every 1000 MS, the consumer has to send a heartbeat to the consumer group coordinator
+	
+	
+SESSION_TIMEOUT_MS_CONFIG: 3000 MS
+	This tells the broker for how long the consumer can go without sending the heartbeat information.
+	so when you configure the heartbeat interval, we are saying consumer go ahead and  send the heartbeat for every 1000 Milliseconds.
+	But it might skip if the load is too much, for whatever reason, it went down and it came back, it could not send the heartbeat. That is OK. But if it does not send
+	the heartbeat for 3000 milliseconds, then the consumer is consider as dead and consumer group coordinator will trigger a rebalance
+
+	Recommended practice to have HEARTBEAT_INTERVAL_MS_CONFIG to one third of SESSION_TIMEOUT_MS_CONFIG
+	
+	
+ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG:
+	Default is 1 MB.
+	This value controls the maximum number of bytes the server returns to the consumer and the default is 1MB.
+	And if we go with the default and if have 30 partitions and five consumers comsuming these partitions, then each consumer gets 6 partitions.
+	So we have to ensure that each consumer has atleast 6 MB, but it is usally recommended that we give it more space beacuse if one of the consumer goes down, the other
+	consumer needs to handle its partitions as well.
+	
+	So the max partitions fetch bytes controls how many bytes of data per partition, the broker returns to the consumer.
+	
+	//30 partitions,5 consumers, 6 partitions, 6MB - 12MB
 	
 
-//		props.setProperty(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, "102412323");
-//		props.setProperty(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, "200");
-//		props.setProperty(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, "1000");
-//		props.setProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "3000");
-//		//30 partions,5 consumers,6MB - 12MB
-//		props.setProperty(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, "1MB");
-//		props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-		props.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, "OrderConsumer");
-		props.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "100");
-		props.setProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, RoundRobinAssignor.class.getName());
+AUTO_OFFSET_RESET_CONFIG: 
+	This controls the consumer behaviour if it starts reading a partition that does not have a committed offset.
+	
+	Two values we can pass here.
+	
+	1. latest:
+		The consumer will start reading those records, which came to the partition, after the consumer has started running the latest records,
+		it will ignore the previous records which were there before the consumer has started running.
+		
+		
+	2. earliest:
+		THe consumer will start reading from the beginning of the partition, it will process all the records from the beginning of the partition
+		
+		
+CLIENT_ID_CONFIG:
+	unique string can be any
+	Used by brokers for logging, metrics and quota allocation purposes.
+	
+
+MAX_POLL_RECORDS_CONFIG:
+	This is the maximum number of records, the poll method can return when consumer is polling.
+	This controls the amount of data that our application will need to process in the polling loop
+
+PARTITION_ASSIGNMENT_STRATEGY_CONFIG:
+
+	props.setProperty(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, PARTITION_ASSIGNMENT_STRATEGY_CONFIG.class.getName());
+	
+	Internally the partition assigner is responsible for assigning the partitions to consumers in the group.
+	There are two partition assigners;
+	
+	1. RangeAssignor: default one
+		Lets say 2 topics, 3 partitions and 2 consumers in the consumer group.
+		It will take the consecutive two subset of partitions from each topic and assigns them to the consumer.
+		Consumer 1 will get two consecutive partitions in topic 1 which is P0, P1 and also gets the consecutive partitions from topic 2  which is P0, P1.
+																
+									  Topic 1  	
+									|----------	
+			Consumer1				|	P 0	  |	
+									|		  |	
+			Topic1 P0, P1			|	P 1	  |	
+			Topic2 P0, P1			|		  |	
+									|	P 2	  |
+		                            |---------| 
+									
+									  Topic 2  	
+									|----------	
+			Consumer2				|	P 0	  |	
+									|		  |	
+			Topic1 P2				|	P 1	  |	
+			Topic2 P2				|		  |	
+									|	P 2	  |	
+		                            |---------| 
+																		
+									
+		And then it starts assigning to the second consumer the only left out consecutive partitions  P2 from topic 1 and P2 from topic 2
+		
+		It never equally divides them.
+		
+		The first consumer ends up getting more partitions than the second consumer.
+		
+		
+	
+	2. PARTITION_ASSIGNMENT_STRATEGY_CONFIG
+	
+		It will go in round robin fashion.
+		it will combine or club the partitions of  both the topics and  then it starts doing the assignment.
+		
+																
+									  Topic 1  	
+									|----------	
+			Consumer1				|	P 0	  |	
+									|		  |	
+			Topic1 P0, P2			|	P 1	  |	
+			Topic2 P1				|		  |	
+									|	P 2	  |
+		                            |---------| 
+									
+									  Topic 2  	
+									|----------	
+			Consumer2				|	P 0	  |	
+									|		  |	
+			Topic1 P1				|	P 1	  |	
+			Topic2 P0, P2			|		  |	
+									|	P 2	  |	
+		                            |---------| 
+		
+		P0, P1, P2,  P0, P1, P2
+		
+		Consumer 1 gets P0 from topic 1 first, Consumer2 gets P1 from topic 1.
+		Consumer 1 gets P2 from topic 1, Consumer2 gets P0 from topic 2.
+		Consumer 1 gets P1 from topic 2, Consumer2 gets P2 from topic 2.

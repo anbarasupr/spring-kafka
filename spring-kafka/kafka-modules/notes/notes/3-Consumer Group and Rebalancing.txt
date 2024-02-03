@@ -139,7 +139,7 @@ Consumer Group Rebalancing:
 	Secondly, if one of the consumers goes down, whether it has gracefully shutdown or whether it has crashed, the partitions it has left out will have to be taken care of
 	by the other consumers in the consumer group.
 	
-	Moving partition ownership from one consumer to another consumer in the group is called consumer group rebalancing.
+	* Moving partition ownership from one consumer to another consumer in the group is called consumer group rebalancing.
 	
 	
 	Whenver a consumer is added to the consumer group or a consumer leaves the consumer group, 
