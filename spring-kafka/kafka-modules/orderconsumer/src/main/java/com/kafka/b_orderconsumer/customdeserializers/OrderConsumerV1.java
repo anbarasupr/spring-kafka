@@ -27,17 +27,29 @@ public class OrderConsumerV1 {
 		//props.setProperty("auto.commit.interval.ms", "2000");
 		props.setProperty("auto.commit.offset", "false");
 
+		// Map contains latest partitions and offset information
 		Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
 				
 		KafkaConsumer<String, Order> consumer = new KafkaConsumer<>(props);
 		
 		class RebalanceHandler implements ConsumerRebalanceListener{
 
+			/*
+			 * This method invoked whenver the rebalance is triggered and before the partitions are being revoked from this particular consumer.
+			 * If there is any clean up left out on the consumer side and also if there are any records, the offset of which are not
+			 * committed yet, this is the great place to commit those offsets.
+			 
+			 * This is the last chance before consumer looses this partition
+			 * 
+			 * */
 			@Override
 			public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-			consumer.commitSync(currentOffsets);
+				consumer.commitSync(currentOffsets); // 
 			}
 
+			/*
+			 * This method invoked whenver the new partitions are being assigned to consumer
+			 * */
 			@Override
 			public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 				
