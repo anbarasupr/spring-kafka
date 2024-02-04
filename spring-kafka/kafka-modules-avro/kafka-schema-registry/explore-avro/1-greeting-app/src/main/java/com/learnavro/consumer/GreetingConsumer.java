@@ -19,6 +19,7 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Properties;
 
+//Consume (Greeting class) Avro records without using schema registry
 public class GreetingConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(GreetingConsumer.class);

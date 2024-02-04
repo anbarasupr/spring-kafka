@@ -18,6 +18,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+// Publish (Greeting class) Avro records without using schema registry
 public class GreetingProducer {
     private static final Logger log = LoggerFactory.getLogger(GreetingConsumer.class);
     private static final String GREETING_TOPIC = "greeting";
