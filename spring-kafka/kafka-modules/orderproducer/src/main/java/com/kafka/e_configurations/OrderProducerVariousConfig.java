@@ -6,7 +6,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import com.bharath.kafka.orderproducer.OrderCallback;
+import com.kafka.OrderCallback;
 
 public class OrderProducerVariousConfig {
 

@@ -1,18 +1,16 @@
 package com.kafka.c_avro.serializers;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Parser;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericData.Record;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import com.bharath.kafka.orderproducer.OrderCallback;
+import com.kafka.OrderCallback;
 
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 

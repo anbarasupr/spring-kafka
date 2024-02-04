@@ -5,8 +5,8 @@ import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
+import com.kafka.OrderCallback;
 import com.kafka.avro.Order;
-import com.bharath.kafka.orderproducer.OrderCallback;
 
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 

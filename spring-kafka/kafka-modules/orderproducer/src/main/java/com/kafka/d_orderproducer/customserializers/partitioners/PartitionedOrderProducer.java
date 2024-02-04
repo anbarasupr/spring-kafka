@@ -5,7 +5,7 @@ import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import com.bharath.kafka.orderproducer.OrderCallback;
+import com.kafka.OrderCallback;
 import com.kafka.b_orderproducer.customserializers.Order;
 
 public class PartitionedOrderProducer {

@@ -1,0 +1,51 @@
+Real Time Stream processing:
+---------------------------
+
+What is real time stream processing in big data systems like Hadoop?
+	In Hadoop, the data is first stored in to systems which refer to as data lakes.
+	We use tools that will pull this data, analyze the data and generate reports that can be used to make business decisions.
+	We call this entire process as near Real-Time.
+	We dont call it real time, but we call it real time because there is a slight time delau between the data being generated, it being pulled, 
+	the analysis being mad and the report being generated.
+	
+	Data streaming on the other hand is a continous flow of business events or data.
+	Unlike bigdata, we do not store the data to a data lake or a database. It is data in motion.
+	As the data flows thru the stream processing applications, these applications can apply computational logic like aggregates, transformations etc., on this data
+	and the analytics or reports are generatedright away in real time.
+	
+Usecases:
+	We can use real time stream processing to monitor the trucks, cars etc., to see that they are on time to their destination
+	
+	Factories can use real time stream processing to analyse the data that comes from lot of IOT devices and make intelligent decisions.
+	
+	Payment and Stock transactions
+	
+	In hospitals, to monitor the health of a patient and take intelligent decisions.
+	
+	In retail, hotel and travel, we use it for recommendations and more.
+	
+	
+	
+kafka streams library:
+	we can use the computational logic on the data by using kafka below library.
+	
+	Stream DSL (Domain Specific langauage) - simple to use and make transformations joins, etc., on the data as it flows thru applications
+	
+	Processor API
+	
+	
+
+Create Stream:
+-------------
+A stream starts with input topic and ends output topic where the data goes to a output topic.
+In between those, will applying various transformational logic.
+
+Create the topology and build it using  the builder (StreamBuild)
+
+Create the kafka streams which is the client stram object and start the stream.
+
+only start method is invoked, the streams start processing and apply the transformational logic.
+
+finally shutdown the stream using shoudown hook
+
+

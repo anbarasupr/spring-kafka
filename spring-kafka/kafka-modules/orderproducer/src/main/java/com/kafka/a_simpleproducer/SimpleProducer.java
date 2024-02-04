@@ -8,7 +8,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
-import com.bharath.kafka.orderproducer.OrderCallback;
+import com.kafka.OrderCallback;
 
 public class SimpleProducer {
 

@@ -6,8 +6,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import com.bharath.kafka.orderproducer.OrderCallback;
-
 public class TransactionalOrderProducer {
 
 	public static void main(String[] args) {

@@ -1,0 +1,68 @@
+Simple / Standalone Consumer
+________________________
+
+So far the consumers we are created are all part of a consumer group, a particular consumer group where in the group coordinator will take care of the 
+partition assignment, the partition re-assignment, if a rebalnce happens, the offset management and all that happens through the consumer group coordinator.
+
+This is good enough for most of the kafka applications.
+
+kafka also allows to create simple or standalone consumer which need not be part of consumer group which is rare.
+
+For these consumers, there is no concept of rebalncing, group coordinator etc.,
+
+This consumer is responsible for taking care of certain partitions. You will have to assign partitions instead of subscribe method which subscribe to a particular topic.
+You will be using the assign method on the consumer, to assign a set of partitions which should be consumed by the consumer.
+
+partitionsFor:
+------------------
+	to get all the partitions on a particular topic
+	You want to assign all the partitions belonging to a particular topic to a consumer, use this method
+	Also it returns the current partitions running on the topic, once the consumer is running.
+	If a new partition is created, that will not be avaialble. You have to invoke this partitionsFor method again to get the latest partitions
+	Have to use some loop for this to get the partitions, assign to the consumer
+	
+	
+	GROUP_ID_CONFIG is not required because it is not part of any active consumer group
+
+
+KafkaConsumer<String, Integer> consumer = new KafkaConsumer<>(props);
+List<PartitionInfo> partitionInfos = consumer.partitionsFor("SimpleConsumerTopic");
+
+ArrayList<TopicPartition> partitions = new ArrayList<>();
+//		partitions.add(new TopicPartition("SimpleConsumerTopic", 0)); //manually add partition with partition number if you know it
+//		partitions.add(new TopicPartition("SimpleConsumerTopic", 1));
+
+for(PartitionInfo info:partitionInfos) {
+	System.out.println(info.partition());
+	partitions.add(new TopicPartition("SimpleConsumerTopic", info.partition()));
+}
+
+consumer.assign(partitions);	
+
+
+
+
+ConsumerConfig.AUTO_OFFSET_RESET_CONFIG : earliest
+------------------------------------------------------
+	props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+	
+	When this consumer runs, it doesnot know where it has to start from.
+	
+	We are telling here to start from the earliest / beginning, otherwise it will start consuming only those messages that come in after the consumer starts.
+
+
+
+
+Few Points:
+---------
+	By default, auto commit enabled.
+
+	To use offset commit apis like consumer.comiitAsync() or commitSync(), the simple consumer should be part of GROUP_ID_CONFIG as part of  Aug 2021 and it has to go thru
+	the group coordinator.
+
+
+	And if you add this simple consumer to the existing consumer group, which is already consuming the messages, you will get a commit exception.
+
+	You cannot add a simple consumer to the active group which has multiple consumers in it and already is processing the messages.
+	
+	But you can use the same simple consumer group for multiple simple consuners, you will not get any exceptions.

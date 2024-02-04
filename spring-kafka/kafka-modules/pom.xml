@@ -16,7 +16,7 @@
         <module>orderproducer</module>
         <module>userconsumer</module>
         <module>userproducer</module>
-        <module>streamdemo</module>
+        <module>streamsdemo</module>
     </modules>
 
     <properties>
